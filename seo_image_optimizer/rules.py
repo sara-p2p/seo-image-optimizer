@@ -11,22 +11,23 @@ from .models import BatchInput, KeywordPool, ManifestRow
 
 def build_keyword_pool(batch: BatchInput, website_summary: str = "") -> KeywordPool:
     genre_slug = _slug_words(batch.genre, fallback="portrait")
-    service_slug = _canonical_service_slug(batch.service_type, batch.genre)
+    service_slug = _canonical_service_slug(batch.genre)
     city_slug = _slug_words(batch.market_location, fallback="local-market")
     website_terms = _extract_site_terms(website_summary)
-    modifier_pool = _brand_modifiers(batch.brand_style)
+    modifier_pool = _brand_modifiers(batch.brand_styles)
+    base_service_phrase = _canonical_service_phrase(batch.genre)
+    alternate_service_phrase = _alternate_service_phrase(batch.genre)
 
     service_phrases = _dedupe(
         [
-            f"{genre_slug}-{service_slug}",
-            f"{service_slug}-{genre_slug}" if service_slug != genre_slug else "",
-            _canonical_service_phrase(batch.service_type, batch.genre),
+            base_service_phrase,
+            alternate_service_phrase,
             f"{genre_slug}-photographer" if service_slug != "photographer" else "",
             "portrait-photographer" if genre_slug != "portrait" else "",
             website_terms[0] if website_terms else "",
         ]
     )
-    locations = _dedupe(city_slug.split("-") + [city_slug, _domain_label(batch.website_url)] + website_terms[1:3])
+    locations = _dedupe(_location_terms(batch.market_location) + [_domain_label(batch.website_url)] + website_terms[1:3])
     style_notes = _dedupe(
         [
             "describe crop feel and subject placement",
@@ -45,8 +46,7 @@ def build_keyword_pool(batch: BatchInput, website_summary: str = "") -> KeywordP
             for part in [
                 batch.studio_name,
                 batch.genre,
-                batch.service_type,
-                batch.brand_style,
+                ", ".join(batch.brand_styles),
                 batch.market_location,
                 batch.notes.strip(),
             ]
@@ -138,12 +138,12 @@ def choose_filename(batch: BatchInput, keyword_pool: KeywordPool, analysis: dict
 def build_alt_text(batch: BatchInput, analysis: dict, rotation: int) -> str:
     rotation_seed = len(batch.studio_name) + len(batch.market_location) + len(batch.genre) + rotation
     genre_label = _display_phrase(batch.genre, fallback="portrait")
-    service_label = _display_phrase(_canonical_service_phrase(batch.service_type, batch.genre), fallback="photography")
+    service_label = _display_phrase(_canonical_service_phrase(batch.genre), fallback="photography")
     location_label = batch.market_location.strip()
     studio_label = batch.studio_name.strip()
     setting_label = batch.setting_tags[0] if batch.setting_tags else ("studio" if analysis["orientation"] == "vertical" else "outdoor")
-    style_word = _pick_from_bank(_style_word_bank(batch.brand_style), rotation_seed + len(service_label))
-    mood_word = _pick_from_bank(_mood_word_bank(batch.brand_style), rotation_seed + len(genre_label))
+    style_word = _pick_from_bank(_style_word_bank(batch.brand_styles), rotation_seed + len(service_label))
+    mood_word = _pick_from_bank(_mood_word_bank(batch.brand_styles), rotation_seed + len(genre_label))
     location_phrase = _location_phrase_bank(location_label)
     monochrome_prefix = "Black and white " if analysis["is_black_and_white"] else ""
     templates = [
@@ -170,8 +170,8 @@ def _slug_words(value: str, fallback: str) -> str:
     return "-".join(words[:4]) or fallback
 
 
-def _canonical_service_slug(service_type: str, genre: str) -> str:
-    raw = f"{service_type} {genre}".lower()
+def _canonical_service_slug(genre: str) -> str:
+    raw = genre.lower()
     mapping = [
         ("headshot", "headshot-photographer"),
         ("branding", "branding-photographer"),
@@ -185,26 +185,41 @@ def _canonical_service_slug(service_type: str, genre: str) -> str:
         ("wedding", "wedding-photographer"),
         ("engagement", "engagement-photographer"),
         ("corporate", "corporate-photographer"),
-        ("branding session", "branding-photographer"),
     ]
     for needle, canonical in mapping:
         if needle in raw:
             return canonical
-    if "photographer" in raw:
-        words = [part for part in _slug_words(raw, fallback="portrait-photographer").split("-") if part != "photography"]
-        return "-".join(words[:3]) or "portrait-photographer"
-    base = _slug_words(service_type, fallback=_slug_words(genre, fallback="portrait"))
-    if base.endswith("photography"):
-        base = base[: -len("photography")].strip("-")
-    if not base:
-        base = "portrait"
-    if base.endswith("photographer"):
-        return base
-    return f"{base}-photographer"
+    cleaned = _slug_words(raw, fallback="portrait")
+    cleaned = cleaned.replace("photography", "").replace("photographer", "").strip("-")
+    cleaned = cleaned or "portrait"
+    return f"{cleaned}-photographer"
 
 
-def _canonical_service_phrase(service_type: str, genre: str) -> str:
-    return _canonical_service_slug(service_type, genre)
+def _canonical_service_phrase(genre: str) -> str:
+    return _canonical_service_slug(genre)
+
+
+def _alternate_service_phrase(genre: str) -> str:
+    raw = genre.lower()
+    mapping = [
+        ("headshot", "headshot-photography"),
+        ("branding", "branding-photography"),
+        ("business", "business-photography"),
+        ("boudoir", "boudoir-photography"),
+        ("newborn", "newborn-photography"),
+        ("maternity", "maternity-photography"),
+        ("family", "family-photography"),
+        ("portrait", "portrait-photography"),
+        ("senior", "senior-photography"),
+        ("wedding", "wedding-photography"),
+        ("engagement", "engagement-photography"),
+        ("corporate", "corporate-photography"),
+    ]
+    for needle, alternate in mapping:
+        if needle in raw:
+            return alternate
+    cleaned = _slug_words(raw, fallback="portrait").replace("photography", "").replace("photographer", "").strip("-")
+    return f"{cleaned or 'portrait'}-photography"
 
 
 def _extract_site_terms(website_summary: str) -> list[str]:
@@ -222,22 +237,26 @@ def _extract_site_terms(website_summary: str) -> list[str]:
     return [word for word, _count in ranked[:4]]
 
 
-def _brand_modifiers(brand_style: str) -> list[str]:
-    style = brand_style.lower()
-    if "luxury" in style:
-        return ["luxury", "bespoke", "editorial", "signature"]
-    if "editorial" in style:
-        return ["editorial", "signature", "refined", "bespoke"]
-    if "classic" in style:
-        return ["classic", "timeless", "refined", "signature"]
-    if "family" in style:
-        return ["warm", "natural", "signature", "refined"]
-    if "corporate" in style:
-        return ["executive", "professional", "refined", "signature"]
-    return ["refined", "signature", "editorial", "bespoke"]
+def _brand_modifiers(brand_styles: list[str]) -> list[str]:
+    styles = [style.lower() for style in brand_styles] or ["refined"]
+    pools = []
+    for style in styles:
+        if "luxury" in style:
+            pools.extend(["luxury", "bespoke", "editorial", "signature"])
+        elif "editorial" in style:
+            pools.extend(["editorial", "signature", "refined", "bespoke"])
+        elif "classic" in style:
+            pools.extend(["classic", "timeless", "refined", "signature"])
+        elif "family" in style:
+            pools.extend(["warm", "natural", "signature", "refined"])
+        elif "corporate" in style:
+            pools.extend(["executive", "professional", "refined", "signature"])
+        else:
+            pools.extend(["refined", "signature", "editorial", "bespoke"])
+    return _dedupe(pools)
 
 
-def _style_word_bank(brand_style: str) -> list[str]:
+def _style_word_bank(brand_styles: list[str]) -> list[str]:
     banks = {
         "luxury": [
             "luxury", "bespoke", "elevated", "polished", "sophisticated", "refined", "curated", "graceful",
@@ -294,10 +313,13 @@ def _style_word_bank(brand_style: str) -> list[str]:
             "high-touch",
         ],
     }
-    return banks.get(brand_style.lower(), banks["refined"])
+    combined: list[str] = []
+    for style in (brand_styles or ["Refined"]):
+        combined.extend(banks.get(style.lower(), banks["refined"]))
+    return _dedupe(combined)
 
 
-def _mood_word_bank(brand_style: str) -> list[str]:
+def _mood_word_bank(brand_styles: list[str]) -> list[str]:
     banks = {
         "luxury": [
             "elevated", "glamorous", "refined", "polished", "dramatic", "bespoke", "signature", "couture",
@@ -351,7 +373,10 @@ def _mood_word_bank(brand_style: str) -> list[str]:
             "careful", "tailored", "settled", "fine-art", "modern", "gracious", "harmonious",
         ],
     }
-    return banks.get(brand_style.lower(), banks["refined"])
+    combined: list[str] = []
+    for style in (brand_styles or ["Refined"]):
+        combined.extend(banks.get(style.lower(), banks["refined"]))
+    return _dedupe(combined)
 
 
 def _pick_from_bank(words: list[str], seed: int) -> str:
@@ -372,6 +397,19 @@ def _location_phrase_bank(location: str) -> str:
 def _display_phrase(value: str, fallback: str) -> str:
     words = [part for part in re.split(r"[-\s]+", value.strip()) if part]
     return " ".join(words).lower() if words else fallback
+
+
+def _location_terms(location: str) -> list[str]:
+    clean = location.strip()
+    if not clean:
+        return ["local-market"]
+    parts = [part.strip() for part in clean.split(",") if part.strip()]
+    city = _slug_words(parts[0], fallback="local-market") if parts else "local-market"
+    combined = _slug_words(clean, fallback=city)
+    terms = [city, combined]
+    if len(parts) > 1 and len(parts[1]) > 2:
+        terms.append(_slug_words(parts[1], fallback=""))
+    return [term for term in terms if term]
 
 
 def _guess_light_direction(grayscale: Image.Image) -> str:

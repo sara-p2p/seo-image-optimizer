@@ -13,9 +13,8 @@ class BatchInput:
     studio_name: str
     website_url: str
     genre: str
-    service_type: str
     market_location: str
-    brand_style: str = "Refined"
+    brand_styles: list[str] = field(default_factory=list)
     setting_tags: list[str] = field(default_factory=list)
     notes: str = ""
 

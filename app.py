@@ -33,12 +33,11 @@ with st.form("optimizer_form"):
     studio_name = st.text_input("Photographer or studio name")
     website_url = st.text_input("Website URL", placeholder="https://example.com")
     genre = st.text_input("Genre", placeholder="Headshots, family, boudoir, newborn, branding...")
-    service_type = st.text_input("Primary service keyword", placeholder="Headshot photographer, newborn photographer...")
     market_location = st.text_input("Primary market location", placeholder="Dallas, TX")
-    brand_style = st.selectbox(
-        "Brand style",
+    brand_styles = st.multiselect(
+        "Brand styles",
         options=["Refined", "Luxury", "Editorial", "Classic", "Family", "Corporate"],
-        index=0,
+        default=["Refined"],
     )
     setting_tags = st.multiselect(
         "Preferred setting tags",
@@ -141,7 +140,6 @@ if submitted:
             ("Studio name", studio_name),
             ("Website URL", website_url),
             ("Genre", genre),
-            ("Primary service keyword", service_type),
             ("Primary market location", market_location),
         )
         if not value
@@ -153,9 +151,8 @@ if submitted:
             studio_name=studio_name.strip(),
             website_url=website_url.strip(),
             genre=genre.strip(),
-            service_type=service_type.strip(),
             market_location=market_location.strip(),
-            brand_style=brand_style.strip(),
+            brand_styles=brand_styles,
             setting_tags=setting_tags,
             notes=notes.strip(),
         )
