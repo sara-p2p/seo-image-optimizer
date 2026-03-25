@@ -26,7 +26,6 @@ st.markdown(
 
 st.title("SEO Image Optimizer")
 st.caption("Upload a finished image zip, enter the studio details, and generate secure rules-based hero and gallery exports.")
-st.info("This version does not use the OpenAI API. Results are generated with local deterministic rules and image analysis only.")
 
 
 with st.form("optimizer_form"):
