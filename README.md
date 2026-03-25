@@ -1,46 +1,48 @@
-# SEO Image Optimizer App
+# SEO Image Optimizer
 
-This project turns the chat-only `seo-image-optimizer` skill into a simple local application your team can run in a browser.
+SEO Image Optimizer is a Streamlit app for turning finished photography exports into web-ready deliverables for SEO and AI discovery.
 
-The app lets a user:
+Users can:
 
-- upload a `.zip` of finished image exports
-- enter the photographer or studio name
-- enter the website URL
-- enter the genre, address, and market
+- upload a `.zip` of edited images
+- enter the photographer or studio details
 - choose `Auto` or `Rules-only` processing
-- generate a downloadable processed zip with `hero/` and `gallery/`
+- generate a downloadable package with `hero/` and `gallery/`
 - download `alt_text.csv`
-- review a thumbnail chart with each new filename and its matching alt text
+- review thumbnails, filenames, and alt text in the browser
 
-## What this version does
+## Features
 
 - researches the photographer website once per run
 - supports hybrid processing:
-  - `Auto` uses the OpenAI API when a key is present
+  - `Auto` uses the OpenAI API when an API key is available
   - `Rules-only` skips API usage entirely
-- analyzes each image to generate:
-  - a search-intent filename
-  - a more descriptive alt text line
-  - a `hero` or `gallery` assignment
-- exports web-ready JPG derivatives
-- packages the outputs into `processed_images.zip`
+- generates:
+  - search-intent filenames
+  - descriptive alt text
+  - hero and gallery assignments
+- exports compressed JPG derivatives
+- packages outputs into `processed_images.zip`
+- keeps results visible after download during the session
 
-## Project structure
+## Project layout
 
-- [app.py](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\app.py)
-- [seo_image_optimizer/ai.py](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\seo_image_optimizer\ai.py)
-- [seo_image_optimizer/pipeline.py](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\seo_image_optimizer\pipeline.py)
-- [seo_image_optimizer/delivery.py](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\seo_image_optimizer\delivery.py)
-- [seo_image_optimizer/website_research.py](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\seo_image_optimizer\website_research.py)
+- `app.py` - Streamlit UI
+- `seo_image_optimizer/pipeline.py` - orchestration
+- `seo_image_optimizer/ai.py` - OpenAI-assisted keyword and manifest generation
+- `seo_image_optimizer/rules.py` - no-API fallback logic
+- `seo_image_optimizer/delivery.py` - extraction, export, CSV generation, and ZIP packaging
+- `seo_image_optimizer/website_research.py` - lightweight website scraping
 
-## Setup
+## Local setup
 
 1. Install Python 3.11 or newer.
-2. Add your OpenAI API key to `.env` or paste it into the app sidebar.
-3. Easiest option:
+2. Add your OpenAI API key to `.env` if you want `Auto` mode.
+3. Run the easiest option:
 
-Double-click [install_and_run.bat](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\install_and_run.bat)
+```powershell
+install_and_run.bat
+```
 
 4. Or run manually:
 
@@ -51,10 +53,16 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-On Windows, you can also double-click [run_app.bat](C:\Users\sara\OneDrive\Desktop\Codex\Image Seo Optimizer\run_app.bat).
+## Streamlit Community Cloud deployment
+
+1. Push this repo to GitHub.
+2. In Streamlit Community Cloud, create a new app from the repo.
+3. Set the main file path to `app.py`.
+4. Add `OPENAI_API_KEY` in the app secrets if you want `Auto` mode.
+
+The checked-in Streamlit config lives at `.streamlit/config.toml`. Secrets should go in `.streamlit/secrets.toml` locally or in the Streamlit Cloud secrets UI, not in Git.
 
 ## Notes
 
-- This environment did not have Python, Node, or Git available, so the code was scaffolded but not executed here.
-- The current implementation is a practical MVP. The next easy upgrade would be packaging it with PyInstaller so the team can launch it without touching a terminal.
 - `Rules-only` mode avoids API cost, but its filenames and alt text will be more templated than `Auto` mode.
+- This is still an MVP workflow app, not yet a polished product platform.
