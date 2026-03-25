@@ -16,7 +16,7 @@ class BatchInput:
     market_location: str
     brand_styles: list[str] = field(default_factory=list)
     setting_tags: list[str] = field(default_factory=list)
-    notes: str = ""
+    additional_locations: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)

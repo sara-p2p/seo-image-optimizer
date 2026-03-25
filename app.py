@@ -32,7 +32,22 @@ with st.form("optimizer_form"):
     uploaded_zip = st.file_uploader("Image ZIP", type=["zip"])
     studio_name = st.text_input("Photographer or studio name")
     website_url = st.text_input("Website URL", placeholder="https://example.com")
-    genre = st.text_input("Genre", placeholder="Headshots, family, boudoir, newborn, branding...")
+    genre = st.selectbox(
+        "Genre",
+        options=[
+            "Boudoir",
+            "Branding",
+            "Corporate",
+            "Family",
+            "Headshots",
+            "Maternity",
+            "Newborn",
+            "Portrait",
+            "Senior",
+            "Wedding",
+        ],
+        index=0,
+    )
     market_location = st.text_input("Primary market location", placeholder="Dallas, TX")
     brand_styles = st.multiselect(
         "Brand styles",
@@ -45,7 +60,12 @@ with st.form("optimizer_form"):
         default=["studio", "outdoor"],
         help="These help keep filenames and alt text aligned with the photographer's real service mix.",
     )
-    notes = st.text_area("Extra business notes or service emphasis", height=110)
+    additional_locations = st.text_area(
+        "Additional locations served",
+        height=110,
+        placeholder="St. Petersburg, Clearwater, Sarasota",
+        help="Optional. Enter nearby cities or towns separated by commas.",
+    )
     submitted = st.form_submit_button("Process Batch", type="primary")
 
 
@@ -154,7 +174,7 @@ if submitted:
             market_location=market_location.strip(),
             brand_styles=brand_styles,
             setting_tags=setting_tags,
-            notes=notes.strip(),
+            additional_locations=[part.strip() for part in additional_locations.split(",") if part.strip()],
         )
 
         with TemporaryDirectory() as tmp_dir:
