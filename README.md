@@ -6,7 +6,6 @@ Users can:
 
 - upload a `.zip` of edited images
 - enter the photographer or studio details
-- choose `Auto` or `Rules-only` processing
 - generate a downloadable package with `hero/` and `gallery/`
 - download `alt_text.csv`
 - review thumbnails, filenames, and alt text in the browser
@@ -14,9 +13,8 @@ Users can:
 ## Features
 
 - researches the photographer website once per run
-- supports hybrid processing:
-  - `Auto` uses the OpenAI API when an API key is available
-  - `Rules-only` skips API usage entirely
+- uses a local rules-based workflow only
+- strengthens results with structured inputs such as service keyword, market, brand style, and setting tags
 - generates:
   - search-intent filenames
   - descriptive alt text
@@ -29,7 +27,6 @@ Users can:
 
 - `app.py` - Streamlit UI
 - `seo_image_optimizer/pipeline.py` - orchestration
-- `seo_image_optimizer/ai.py` - OpenAI-assisted keyword and manifest generation
 - `seo_image_optimizer/rules.py` - no-API fallback logic
 - `seo_image_optimizer/delivery.py` - extraction, export, CSV generation, and ZIP packaging
 - `seo_image_optimizer/website_research.py` - lightweight website scraping
@@ -37,14 +34,13 @@ Users can:
 ## Local setup
 
 1. Install Python 3.11 or newer.
-2. Add your OpenAI API key to `.env` if you want `Auto` mode.
-3. Run the easiest option:
+2. Run the easiest option:
 
 ```powershell
 install_and_run.bat
 ```
 
-4. Or run manually:
+3. Or run manually:
 
 ```powershell
 py -3 -m venv .venv
@@ -58,11 +54,11 @@ streamlit run app.py
 1. Push this repo to GitHub.
 2. In Streamlit Community Cloud, create a new app from the repo.
 3. Set the main file path to `app.py`.
-4. Add `OPENAI_API_KEY` in the app secrets if you want `Auto` mode.
 
-The checked-in Streamlit config lives at `.streamlit/config.toml`. Secrets should go in `.streamlit/secrets.toml` locally or in the Streamlit Cloud secrets UI, not in Git.
+The checked-in Streamlit config lives at `.streamlit/config.toml`.
 
 ## Notes
 
-- `Rules-only` mode avoids API cost, but its filenames and alt text will be more templated than `Auto` mode.
+- This version does not use the OpenAI API.
+- The app hides most Streamlit chrome inside the page, but some browser- or platform-level controls may still appear depending on Streamlit Community Cloud.
 - This is still an MVP workflow app, not yet a polished product platform.

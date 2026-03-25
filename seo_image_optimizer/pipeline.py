@@ -11,7 +11,7 @@ from .delivery import (
     write_manifest_csv,
 )
 from .models import BatchInput, ProcessResult
-from . import ai, rules
+from . import rules
 from .thumbnails import create_thumbnail
 from .website_research import fetch_site_summary
 
@@ -19,8 +19,7 @@ from .website_research import fetch_site_summary
 def process_batch(batch: BatchInput, input_zip: Path, working_root: Path) -> ProcessResult:
     working_root.mkdir(parents=True, exist_ok=True)
     website_summary = fetch_site_summary(batch.website_url)
-    engine_name, keyword_pool_builder, manifest_row_builder = _choose_engine(batch)
-    keyword_pool = keyword_pool_builder(batch, website_summary)
+    keyword_pool = rules.build_keyword_pool(batch, website_summary)
 
     extracted_dir = working_root / "extracted"
     output_dir = working_root / "delivery"
@@ -32,7 +31,7 @@ def process_batch(batch: BatchInput, input_zip: Path, working_root: Path) -> Pro
     existing_names: set[str] = set()
 
     for image_path, relative_path in exported:
-        row = manifest_row_builder(batch, keyword_pool, image_path, relative_path, existing_names)
+        row = rules.generate_manifest_row(batch, keyword_pool, image_path, relative_path, existing_names)
         existing_names.add(row.new_filename)
         thumb_path = thumbs_dir / f"{Path(row.new_filename).stem}.jpg"
         create_thumbnail(image_path, thumb_path)
@@ -59,7 +58,7 @@ def process_batch(batch: BatchInput, input_zip: Path, working_root: Path) -> Pro
         failed_path=failed_path,
         rows=rows,
         skipped_files=skipped_files,
-        processing_summary=engine_name,
+        processing_summary="Rules-based secure mode",
     )
 
 
@@ -74,11 +73,3 @@ def _cap_hero_assignments(rows) -> None:
         hero_count += 1
         if hero_count > hero_limit:
             row.folder = "gallery"
-
-
-def _choose_engine(batch: BatchInput):
-    wants_rules_only = batch.processing_mode == "rules"
-    has_api = bool(batch.openai_api_key.strip())
-    if not wants_rules_only and has_api:
-        return "AI-assisted mode", ai.build_keyword_pool, ai.generate_manifest_row
-    return "Rules-only mode", rules.build_keyword_pool, rules.generate_manifest_row

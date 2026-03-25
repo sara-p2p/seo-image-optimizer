@@ -13,12 +13,11 @@ class BatchInput:
     studio_name: str
     website_url: str
     genre: str
+    service_type: str
     market_location: str
-    business_address: str
+    brand_style: str = "Refined"
+    setting_tags: list[str] = field(default_factory=list)
     notes: str = ""
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4.1-mini"
-    processing_mode: str = "auto"
 
 
 @dataclass(slots=True)
